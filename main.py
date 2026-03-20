@@ -1,11 +1,19 @@
 import ccxt
 import os
+import time
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
+
+logging.basicConfig(
+    filename='bot.log',
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s'
+)
 
 def print_status(ok, message):
     if ok:
@@ -30,7 +38,7 @@ def print_status(ok, message):
 """)
     print(f"→ {message}\n")
 
-def test_connection():
+def connect():
     try:
         exchange = ccxt.binance({
             'apiKey': API_KEY,
@@ -38,7 +46,6 @@ def test_connection():
             'enableRateLimit': True,
         })
 
-        # activar testnet
         exchange.set_sandbox_mode(True)
 
         exchange.urls['api'] = {
@@ -47,14 +54,27 @@ def test_connection():
         }
 
         balance = exchange.fetch_balance()
-
-        if balance:
-            print_status(True, "Conexión exitosa a Binance Testnet")
-        else:
-            print_status(False, "Sin respuesta de balance")
+        print_status(True, "Conectado a Binance Testnet")
+        return exchange
 
     except Exception as e:
         print_status(False, str(e))
+        return None
+
+def loop():
+    while True:
+        try:
+            exchange = connect()
+
+            if exchange:
+                logging.info("Conexión OK")
+            else:
+                logging.error("Fallo conexión")
+
+        except Exception as e:
+            logging.error(f"Error loop: {e}")
+
+        time.sleep(30)
 
 if __name__ == "__main__":
-    test_connection()
+    loop()
